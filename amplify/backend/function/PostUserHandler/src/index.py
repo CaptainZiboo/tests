@@ -123,7 +123,7 @@ def handler(event, context):
         return {
             'statusCode': 500,
             'headers': headers,
-            'body': json.dumps({'error': 'Database error'})
+            'body': json.dumps({'error': 'Database error: ' + str(e)})
         }
     except Exception as e:
         print("Unhandled exception:", e)
