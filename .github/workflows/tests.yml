@@ -29,9 +29,4 @@ jobs:
         run: |
           # Run pytest from the amplify directory to find your tests
           cd amplify
-          pytest tests/ -v
-
-      - name: Test Lambda function directly
-        run: |
-          cd amplify/backend/function/UserHandler/src
-          python -m pytest ../../../../../../tests/test_UserHandler.py -v
+          pytest -v
