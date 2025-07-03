@@ -48,7 +48,6 @@ class TestPostUserHandler:
         from index import handler
 
         event = {
-            'httpMethod': 'POST',
             'body': json.dumps({'email': 'test@example.com'})
         }
 
@@ -80,7 +79,7 @@ class TestPostUserHandler:
         self.setup_table()
         from index import handler
         
-        event = {'httpMethod': 'POST', 'body': json.dumps({})}
+        event = {'body': json.dumps({})}
 
         response = handler(event, {})
         assert response['statusCode'] == 400
@@ -305,50 +304,21 @@ class TestPostUserHandler:
         assert len(body) == 3  # 'id', 'email', and 'name'
 
     @mock_dynamodb
-    def test_unsupported_http_method(self):
-        """Test rejection of unsupported HTTP methods"""
-        self.setup_table()
-        from index import handler
-        
-        unsupported_methods = ['GET', 'PUT', 'DELETE', 'PATCH', 'HEAD']
-        
-        for method in unsupported_methods:
-            event = {'httpMethod': method}
-            response = handler(event, {})
-            assert response['statusCode'] == 405
-            body = json.loads(response['body'])
-            assert body['error'] == 'Method not allowed'
-
-    @mock_dynamodb
-    def test_options_method_cors_preflight(self):
-        """Test OPTIONS method for CORS preflight"""
-        self.setup_table()
-        from index import handler
-        
-        response = handler({'httpMethod': 'OPTIONS'}, {})
-        assert response['statusCode'] == 200
-        assert response['body'] == ''
-        headers = response['headers']
-        assert headers['Access-Control-Allow-Origin'] == '*'
-        assert 'Access-Control-Allow-Headers' in headers
-        assert 'Access-Control-Allow-Methods' in headers
-
-    @mock_dynamodb
     def test_cors_headers_present(self):
         """Test CORS headers are present in all responses"""
         self.setup_table()
         from index import handler
         
         # Test success case
-        event = {'httpMethod': 'POST', 'body': json.dumps({'email': 'test@example.com'})}
+        event = {'body': json.dumps({'email': 'test@example.com'})}
         response = handler(event, {})
         headers = response['headers']
         assert headers['Access-Control-Allow-Origin'] == '*'
         assert 'Access-Control-Allow-Headers' in headers
         assert 'Access-Control-Allow-Methods' in headers
 
-        # Test error case
-        event = {'httpMethod': 'GET'}
+        # Test error case (missing body)
+        event = {}
         response = handler(event, {})
         headers = response['headers']
         assert headers['Access-Control-Allow-Origin'] == '*'
@@ -369,19 +339,6 @@ class TestPostUserHandler:
         assert response['statusCode'] == 500
         body = json.loads(response['body'])
         assert body['error'].startswith('Database error:')
-
-    @mock_dynamodb
-    def test_general_exception_handling(self):
-        """Test general exception handling"""
-        self.setup_table()
-        from index import handler
-        
-        event = {}  # Missing httpMethod to trigger KeyError
-
-        response = handler(event, {})
-        assert response['statusCode'] == 500
-        body = json.loads(response['body'])
-        assert body['error'] == 'Internal server error'
 
     @mock_dynamodb
     def test_uuid_generation_uniqueness(self):

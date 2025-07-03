@@ -27,6 +27,14 @@
     "storagedynamoStreamArn": {
       "Type": "String",
       "Default": "storagedynamoStreamArn"
+    },
+    "apiapia8a451f3ApiName": {
+      "Type": "String",
+      "Default": "apiapia8a451f3ApiName"
+    },
+    "apiapia8a451f3ApiId": {
+      "Type": "String",
+      "Default": "apiapia8a451f3ApiId"
     }
   },
   "Conditions": {
@@ -90,6 +98,12 @@
             },
             "STORAGE_DYNAMO_STREAMARN": {
               "Ref": "storagedynamoStreamArn"
+            },
+            "API_APIA8A451F3_APINAME": {
+              "Ref": "apiapia8a451f3ApiName"
+            },
+            "API_APIA8A451F3_APIID": {
+              "Ref": "apiapia8a451f3ApiId"
             }
           }
         },
@@ -201,6 +215,36 @@
         "PolicyDocument": {
           "Version": "2012-10-17",
           "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "apigateway:POST",
+                "apigateway:PUT",
+                "apigateway:GET",
+                "apigateway:HEAD",
+                "apigateway:OPTIONS",
+                "apigateway:PATCH",
+                "apigateway:DELETE"
+              ],
+              "Resource": [
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:aws:apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      "::/restapis/",
+                      {
+                        "Ref": "apiapia8a451f3ApiName"
+                      },
+                      "/*"
+                    ]
+                  ]
+                }
+              ]
+            },
             {
               "Effect": "Allow",
               "Action": [

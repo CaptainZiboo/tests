@@ -12,33 +12,11 @@ EMAIL_INDEX = 'email'
 def handler(event, context):
     headers = {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'GET,OPTIONS',
+        'Access-Control-Allow-Headers': '*',
+        'Access-Control-Allow-Methods': '*',
     }
 
     try:
-        if 'httpMethod' not in event:
-            return {
-                'statusCode': 500,
-                'headers': headers,
-                'body': json.dumps({'error': 'Internal server error'})
-            }
-
-        # Handle OPTIONS for CORS preflight
-        if event.get('httpMethod') == 'OPTIONS':
-            return {
-                'statusCode': 200,
-                'headers': headers,
-                'body': ''
-            }
-
-        if event.get('httpMethod') != 'GET':
-            return {
-                'statusCode': 405,
-                'headers': headers,
-                'body': json.dumps({'error': 'Method not allowed'})
-            }
-
         query_params = event.get('queryStringParameters') or {}
         email = query_params.get('email', '').strip()
 

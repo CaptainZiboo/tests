@@ -45,7 +45,7 @@ class TestGetUserHandler:
         test_user = {'id': str(uuid.uuid4()), 'email': 'test@example.com'}
         table.put_item(Item=test_user)
 
-        event = {'httpMethod': 'GET', 'queryStringParameters': {'email': 'test@example.com'}}
+        event = {'queryStringParameters': {'email': 'test@example.com'}}
         response = self.handler(event, {})
         assert response['statusCode'] == 200
         body = json.loads(response['body'])
@@ -55,7 +55,7 @@ class TestGetUserHandler:
     @mock_dynamodb
     def test_get_user_not_found(self):
         self.setup_table()
-        event = {'httpMethod': 'GET', 'queryStringParameters': {'email': 'nonexistent@example.com'}}
+        event = {'queryStringParameters': {'email': 'nonexistent@example.com'}}
         response = self.handler(event, {})
         assert response['statusCode'] == 404
         assert json.loads(response['body']) == {'error': 'User not found'}
@@ -66,7 +66,7 @@ class TestGetUserHandler:
     ])
     def test_get_user_missing_or_invalid_email(self, query):
         self.setup_table()
-        event = {'httpMethod': 'GET', 'queryStringParameters': query}
+        event = {'queryStringParameters': query}
         response = self.handler(event, {})
         assert response['statusCode'] == 400
         assert json.loads(response['body']) == {'error': 'Email query parameter is required'}
@@ -79,7 +79,7 @@ class TestGetUserHandler:
             'user@', 'user@domain', 'user..name@domain.com'
         ]
         for email in invalid_emails:
-            event = {'httpMethod': 'GET', 'queryStringParameters': {'email': email}}
+            event = {'queryStringParameters': {'email': email}}
             response = self.handler(event, {})
             assert response['statusCode'] == 400
             assert json.loads(response['body']) == {'error': 'Invalid email format'}
@@ -94,7 +94,7 @@ class TestGetUserHandler:
             'x@example.com'
         ]
         for email in valid_emails:
-            event = {'httpMethod': 'GET', 'queryStringParameters': {'email': email}}
+            event = {'queryStringParameters': {'email': email}}
             response = self.handler(event, {})
             assert response['statusCode'] == 404
             assert json.loads(response['body']) == {'error': 'User not found'}
@@ -105,30 +105,10 @@ class TestGetUserHandler:
         test_user = {'id': str(uuid.uuid4()), 'email': 'test@example.com'}
         table.put_item(Item=test_user)
 
-        event = {'httpMethod': 'GET', 'queryStringParameters': {'email': 'TEST@EXAMPLE.COM'}}
+        event = {'queryStringParameters': {'email': 'TEST@EXAMPLE.COM'}}
         response = self.handler(event, {})
         assert response['statusCode'] == 404
         assert json.loads(response['body']) == {'error': 'User not found'}
-
-    @mock_dynamodb
-    def test_unsupported_http_method(self):
-        self.setup_table()
-        for method in ['POST', 'PUT', 'DELETE', 'PATCH', 'HEAD']:
-            event = {'httpMethod': method, 'queryStringParameters': {'email': 'test@example.com'}}
-            response = self.handler(event, {})
-            assert response['statusCode'] == 405
-            assert json.loads(response['body']) == {'error': 'Method not allowed'}
-
-    @mock_dynamodb
-    def test_options_method_cors_preflight(self):
-        self.setup_table()
-        response = self.handler({'httpMethod': 'OPTIONS'}, {})
-        assert response['statusCode'] == 200
-        assert response['body'] == ''
-        headers = response['headers']
-        assert headers['Access-Control-Allow-Origin'] == '*'
-        assert 'Access-Control-Allow-Headers' in headers
-        assert 'Access-Control-Allow-Methods' in headers
 
     @mock_dynamodb
     def test_cors_headers_present_in_all_cases(self):
@@ -154,14 +134,6 @@ class TestGetUserHandler:
         assert response['statusCode'] == 500
         body = json.loads(response['body'])
         assert body['error'].startswith('Database error:')
-
-    @mock_dynamodb
-    def test_general_exception_handling(self):
-        self.setup_table()
-        event = {}  # Missing httpMethod
-        response = self.handler(event, {})
-        assert response['statusCode'] == 500
-        assert json.loads(response['body']) == {'error': 'Internal server error'}
 
     @mock_dynamodb
     def test_email_trimming(self):

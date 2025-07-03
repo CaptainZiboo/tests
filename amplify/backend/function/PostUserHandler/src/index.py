@@ -18,29 +18,6 @@ def handler(event, context):
     }
 
     try:
-        # Check if httpMethod exists first
-        if 'httpMethod' not in event:
-            return {
-                'statusCode': 500,
-                'headers': headers,
-                'body': json.dumps({'error': 'Internal server error'})
-            }
-
-        # Handle OPTIONS for CORS preflight
-        if event.get('httpMethod') == 'OPTIONS':
-            return {
-                'statusCode': 200,
-                'headers': headers,
-                'body': ''
-            }
-
-        if event.get('httpMethod') != 'POST':
-            return {
-                'statusCode': 405,
-                'headers': headers,
-                'body': json.dumps({'error': 'Method not allowed'})
-            }
-
         if 'body' not in event or not event['body']:
             return {
                 'statusCode': 400,
