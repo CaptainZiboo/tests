@@ -6,7 +6,7 @@ from botocore.exceptions import ClientError
 
 dynamodb = boto3.resource('dynamodb')
 USERS_TABLE = os.environ.get('USERS_TABLE', 'test_users')
-EMAIL_INDEX = 'email-index'
+EMAIL_INDEX = 'email'
 
 
 def handler(event, context):

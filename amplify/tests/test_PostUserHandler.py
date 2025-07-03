@@ -27,7 +27,7 @@ class TestPostUserHandler:
             ],
             GlobalSecondaryIndexes=[
                 {
-                    'IndexName': 'email-index',
+                    'IndexName': 'email',
                     'KeySchema': [{'AttributeName': 'email', 'KeyType': 'HASH'}],
                     'Projection': {'ProjectionType': 'ALL'},
                     'ProvisionedThroughput': {'ReadCapacityUnits': 5, 'WriteCapacityUnits': 5}
