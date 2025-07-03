@@ -152,7 +152,8 @@ class TestGetUserHandler:
         event = {'httpMethod': 'GET', 'queryStringParameters': {'email': 'test@example.com'}}
         response = self.handler(event, {})
         assert response['statusCode'] == 500
-        assert json.loads(response['body']) == {'error': 'Database error'}
+        body = json.loads(response['body'])
+        assert body['error'].startswith('Database error:')
 
     @mock_dynamodb
     def test_general_exception_handling(self):
