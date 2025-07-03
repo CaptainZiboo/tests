@@ -2,338 +2,370 @@ import pytest
 import json
 import boto3
 import os
+import sys
 from moto import mock_dynamodb
-from unittest.mock import patch
 import uuid
 
 # Set environment variables for the lambda
-os.environ['AWS_DEFAULT_REGION'] = 'us-east-1'
+os.environ['AWS_DEFAULT_REGION'] = 'eu-west-1'
 
-@mock_dynamodb
+# Add the lambda source directory to the path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend', 'function', 'PostUserHandler', 'src'))
+
 class TestPostUserHandler:
-    
-    def setup_method(self):
-        """Setup method called before each test - creates DynamoDB table"""
-        # Create mock DynamoDB
-        self.dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
-        
-        # Create users table
-        self.table = self.dynamodb.create_table(
+
+    def setup_table(self):
+        """Helper to create the mock DynamoDB users table"""
+        dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
+        table = dynamodb.create_table(
             TableName='users',
-            KeySchema=[
-                {
-                    'AttributeName': 'id',
-                    'KeyType': 'HASH'
-                }
-            ],
+            KeySchema=[{'AttributeName': 'id', 'KeyType': 'HASH'}],
             AttributeDefinitions=[
-                {
-                    'AttributeName': 'id',
-                    'AttributeType': 'S'
-                },
-                {
-                    'AttributeName': 'email',
-                    'AttributeType': 'S'
-                }
+                {'AttributeName': 'id', 'AttributeType': 'S'},
+                {'AttributeName': 'email', 'AttributeType': 'S'}
             ],
             GlobalSecondaryIndexes=[
                 {
                     'IndexName': 'email-index',
-                    'KeySchema': [
-                        {
-                            'AttributeName': 'email',
-                            'KeyType': 'HASH'
-                        }
-                    ],
-                    'Projection': {
-                        'ProjectionType': 'ALL'
-                    },
-                    'ProvisionedThroughput': {
-                        'ReadCapacityUnits': 5,
-                        'WriteCapacityUnits': 5
-                    }
+                    'KeySchema': [{'AttributeName': 'email', 'KeyType': 'HASH'}],
+                    'Projection': {'ProjectionType': 'ALL'},
+                    'ProvisionedThroughput': {'ReadCapacityUnits': 5, 'WriteCapacityUnits': 5}
                 }
             ],
             BillingMode='PROVISIONED',
-            ProvisionedThroughput={
-                'ReadCapacityUnits': 5,
-                'WriteCapacityUnits': 5
-            }
+            ProvisionedThroughput={'ReadCapacityUnits': 5, 'WriteCapacityUnits': 5}
         )
-        
-        # Wait for table to be created
-        self.table.meta.client.get_waiter('table_exists').wait(TableName='users')
+        table.meta.client.get_waiter('table_exists').wait(TableName='users')
+        return table
 
+    @mock_dynamodb
     def test_create_user_success(self):
-        """Test POST /users - creates new user successfully"""
-        # Arrange
-        from PostUserHandler import handler  # Import will be available after implementation
+        """Test successful user creation with proper validation"""
+        self.table = self.setup_table()
         
+        # Import after mocking DynamoDB
+        from index import handler
+
         event = {
             'httpMethod': 'POST',
             'body': json.dumps({'email': 'test@example.com'})
         }
-        
-        # Act
+
         response = handler(event, {})
         
-        # Assert
+        # Assert response structure
         assert response['statusCode'] == 201
-        assert 'Access-Control-Allow-Origin' in response['headers']
+        assert 'headers' in response
+        assert 'body' in response
         
+        # Assert CORS headers
+        assert response['headers']['Access-Control-Allow-Origin'] == '*'
+        
+        # Assert body content
         body = json.loads(response['body'])
         assert 'id' in body
         assert body['email'] == 'test@example.com'
         assert len(body['id']) == 36  # UUID length
         
         # Verify user was actually created in DynamoDB
-        created_user = self.table.get_item(Key={'id': body['id']})
-        assert 'Item' in created_user
-        assert created_user['Item']['email'] == 'test@example.com'
+        created = self.table.get_item(Key={'id': body['id']})
+        assert 'Item' in created
+        assert created['Item']['email'] == 'test@example.com'
+        assert created['Item']['id'] == body['id']
 
+    @mock_dynamodb
     def test_create_user_missing_email(self):
-        """Test POST /users - missing email field"""
-        # Arrange
-        from PostUserHandler import handler
+        """Test missing email validation"""
+        self.setup_table()
+        from index import handler
         
-        event = {
-            'httpMethod': 'POST',
-            'body': json.dumps({})
-        }
-        
-        # Act
+        event = {'httpMethod': 'POST', 'body': json.dumps({})}
+
         response = handler(event, {})
-        
-        # Assert
         assert response['statusCode'] == 400
         body = json.loads(response['body'])
         assert body['error'] == 'Email is required'
 
+    @mock_dynamodb
     def test_create_user_empty_email(self):
-        """Test POST /users - empty email field"""
-        # Arrange
-        from PostUserHandler import handler
+        """Test empty email validation"""
+        self.setup_table()
+        from index import handler
         
-        event = {
-            'httpMethod': 'POST',
-            'body': json.dumps({'email': ''})
-        }
-        
-        # Act
+        event = {'httpMethod': 'POST', 'body': json.dumps({'email': ''})}
+
         response = handler(event, {})
-        
-        # Assert
         assert response['statusCode'] == 400
         body = json.loads(response['body'])
         assert body['error'] == 'Email is required'
 
-    def test_create_user_invalid_email_format(self):
-        """Test POST /users - invalid email format"""
-        # Arrange
-        from PostUserHandler import handler
+    @mock_dynamodb
+    def test_create_user_whitespace_email(self):
+        """Test whitespace-only email validation"""
+        self.setup_table()
+        from index import handler
         
-        event = {
-            'httpMethod': 'POST',
-            'body': json.dumps({'email': 'invalid-email'})
-        }
-        
-        # Act
+        event = {'httpMethod': 'POST', 'body': json.dumps({'email': '   '})}
+
         response = handler(event, {})
-        
-        # Assert
         assert response['statusCode'] == 400
         body = json.loads(response['body'])
-        assert body['error'] == 'Invalid email format'
+        assert body['error'] == 'Email is required'
 
+    @mock_dynamodb
+    def test_create_user_invalid_email_format(self):
+        """Test invalid email format validation"""
+        self.setup_table()
+        from index import handler
+        
+        invalid_emails = [
+            'bademail',
+            'bad@email',
+            'bad@.com',
+            '@example.com',
+            'user@',
+            'user@domain',
+            'user..name@domain.com'
+        ]
+        
+        for invalid_email in invalid_emails:
+            event = {'httpMethod': 'POST', 'body': json.dumps({'email': invalid_email})}
+            response = handler(event, {})
+            assert response['statusCode'] == 400
+            body = json.loads(response['body'])
+            assert body['error'] == 'Invalid email format'
+
+    @mock_dynamodb
+    def test_create_user_valid_email_formats(self):
+        """Test various valid email formats"""
+        self.setup_table()
+        from index import handler
+        
+        valid_emails = [
+            'user@example.com',
+            'test.email@domain.co.uk',
+            'user+tag@example.org',
+            'user123@test-domain.com',
+            'a@b.co'
+        ]
+        
+        for valid_email in valid_emails:
+            event = {'httpMethod': 'POST', 'body': json.dumps({'email': valid_email})}
+            response = handler(event, {})
+            assert response['statusCode'] == 201
+            body = json.loads(response['body'])
+            assert body['email'] == valid_email
+
+    @mock_dynamodb
     def test_create_user_duplicate_email(self):
-        """Test POST /users - email already exists"""
-        # Arrange
-        from PostUserHandler import handler
-        
-        # Create first user
-        existing_user = {
-            'id': str(uuid.uuid4()),
-            'email': 'existing@example.com'
-        }
-        self.table.put_item(Item=existing_user)
-        
-        event = {
-            'httpMethod': 'POST',
-            'body': json.dumps({'email': 'existing@example.com'})
-        }
-        
-        # Act
+        """Test duplicate email rejection"""
+        self.table = self.setup_table()
+        from index import handler
+
+        # Insert existing user
+        existing_email = 'existing@example.com'
+        self.table.put_item(Item={'id': str(uuid.uuid4()), 'email': existing_email})
+
+        event = {'httpMethod': 'POST', 'body': json.dumps({'email': existing_email})}
         response = handler(event, {})
         
-        # Assert
         assert response['statusCode'] == 409
         body = json.loads(response['body'])
         assert body['error'] == 'User with this email already exists'
 
-    def test_create_user_invalid_json(self):
-        """Test POST /users - invalid JSON body"""
-        # Arrange
-        from PostUserHandler import handler
-        
-        event = {
-            'httpMethod': 'POST',
-            'body': 'invalid json'
-        }
-        
-        # Act
+    @mock_dynamodb
+    def test_create_user_duplicate_email_case_sensitive(self):
+        """Test that email comparison is case-sensitive"""
+        self.table = self.setup_table()
+        from index import handler
+
+        # Insert existing user with lowercase email
+        self.table.put_item(Item={'id': str(uuid.uuid4()), 'email': 'test@example.com'})
+
+        # Try to create user with uppercase email - should succeed (case sensitive)
+        event = {'httpMethod': 'POST', 'body': json.dumps({'email': 'TEST@EXAMPLE.COM'})}
         response = handler(event, {})
         
-        # Assert
+        assert response['statusCode'] == 201
+        body = json.loads(response['body'])
+        assert body['email'] == 'TEST@EXAMPLE.COM'
+
+    @mock_dynamodb
+    def test_create_user_invalid_json(self):
+        """Test invalid JSON handling"""
+        self.setup_table()
+        from index import handler
+        
+        event = {'httpMethod': 'POST', 'body': 'invalid json'}
+
+        response = handler(event, {})
         assert response['statusCode'] == 400
         body = json.loads(response['body'])
         assert body['error'] == 'Invalid JSON in request body'
 
+    @mock_dynamodb
     def test_create_user_no_body(self):
-        """Test POST /users - no body provided"""
-        # Arrange
-        from PostUserHandler import handler
+        """Test missing body handling"""
+        self.setup_table()
+        from index import handler
         
-        event = {
-            'httpMethod': 'POST'
-        }
-        
-        # Act
+        event = {'httpMethod': 'POST'}
+
         response = handler(event, {})
-        
-        # Assert
         assert response['statusCode'] == 400
         body = json.loads(response['body'])
         assert body['error'] == 'Request body is required'
 
+    @mock_dynamodb
+    def test_create_user_null_body(self):
+        """Test null body handling"""
+        self.setup_table()
+        from index import handler
+        
+        event = {'httpMethod': 'POST', 'body': None}
+
+        response = handler(event, {})
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert body['error'] == 'Request body is required'
+
+    @mock_dynamodb
     def test_create_user_additional_fields_ignored(self):
-        """Test POST /users - additional fields are ignored"""
-        # Arrange
-        from PostUserHandler import handler
+        """Test that additional fields are ignored for security"""
+        self.setup_table()
+        from index import handler
         
         event = {
             'httpMethod': 'POST',
             'body': json.dumps({
                 'email': 'test@example.com',
                 'name': 'Test User',
-                'age': 30,
-                'malicious_field': 'hack'
+                'age': 42,
+                'admin': True,
+                'password': 'secret',
+                'extra': 'data'
             })
         }
-        
-        # Act
+
         response = handler(event, {})
-        
-        # Assert
         assert response['statusCode'] == 201
+        
         body = json.loads(response['body'])
         assert body['email'] == 'test@example.com'
         assert 'name' not in body
         assert 'age' not in body
-        assert 'malicious_field' not in body
+        assert 'admin' not in body
+        assert 'password' not in body
+        assert 'extra' not in body
+        
+        # Verify only allowed fields are stored
+        assert len(body) == 2  # Only 'id' and 'email'
 
+    @mock_dynamodb
     def test_unsupported_http_method(self):
-        """Test unsupported HTTP method"""
-        # Arrange
-        from PostUserHandler import handler
+        """Test rejection of unsupported HTTP methods"""
+        self.setup_table()
+        from index import handler
         
-        event = {
-            'httpMethod': 'GET'
-        }
+        unsupported_methods = ['GET', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']
         
-        # Act
-        response = handler(event, {})
-        
-        # Assert
-        assert response['statusCode'] == 405
-        body = json.loads(response['body'])
-        assert body['error'] == 'Method not allowed'
+        for method in unsupported_methods:
+            event = {'httpMethod': method}
+            response = handler(event, {})
+            assert response['statusCode'] == 405
+            body = json.loads(response['body'])
+            assert body['error'] == 'Method not allowed'
 
+    @mock_dynamodb
     def test_cors_headers_present(self):
-        """Test CORS headers are present in response"""
-        # Arrange
-        from PostUserHandler import handler
+        """Test CORS headers are present in all responses"""
+        self.setup_table()
+        from index import handler
         
-        event = {
-            'httpMethod': 'POST',
-            'body': json.dumps({'email': 'test@example.com'})
-        }
-        
-        # Act
+        # Test success case
+        event = {'httpMethod': 'POST', 'body': json.dumps({'email': 'test@example.com'})}
         response = handler(event, {})
-        
-        # Assert
-        assert 'Access-Control-Allow-Headers' in response['headers']
-        assert 'Access-Control-Allow-Origin' in response['headers']
-        assert 'Access-Control-Allow-Methods' in response['headers']
-        assert response['headers']['Access-Control-Allow-Origin'] == '*'
+        headers = response['headers']
+        assert headers['Access-Control-Allow-Origin'] == '*'
+        assert 'Access-Control-Allow-Headers' in headers
+        assert 'Access-Control-Allow-Methods' in headers
 
+        # Test error case
+        event = {'httpMethod': 'GET'}
+        response = handler(event, {})
+        headers = response['headers']
+        assert headers['Access-Control-Allow-Origin'] == '*'
+        assert 'Access-Control-Allow-Headers' in headers
+        assert 'Access-Control-Allow-Methods' in headers
+
+    @mock_dynamodb
     def test_database_error_handling(self):
         """Test database error handling"""
-        # Arrange
-        from PostUserHandler import handler
-        
+        self.table = self.setup_table()
         # Delete the table to simulate database error
         self.table.delete()
         
-        event = {
-            'httpMethod': 'POST',
-            'body': json.dumps({'email': 'test@example.com'})
-        }
-        
-        # Act
+        from index import handler
+        event = {'httpMethod': 'POST', 'body': json.dumps({'email': 'test@example.com'})}
+
         response = handler(event, {})
-        
-        # Assert
         assert response['statusCode'] == 500
         body = json.loads(response['body'])
         assert body['error'] == 'Database error'
 
+    @mock_dynamodb
     def test_general_exception_handling(self):
         """Test general exception handling"""
-        # Arrange
-        from PostUserHandler import handler
+        self.setup_table()
+        from index import handler
         
-        event = {}  # Missing httpMethod to trigger exception
-        
-        # Act
+        event = {}  # Missing httpMethod to trigger KeyError
+
         response = handler(event, {})
-        
-        # Assert
         assert response['statusCode'] == 500
         body = json.loads(response['body'])
         assert body['error'] == 'Internal server error'
 
-    def test_uuid_generation(self):
-        """Test that UUIDs are properly generated and unique"""
-        # Arrange
-        from PostUserHandler import handler
+    @mock_dynamodb
+    def test_uuid_generation_uniqueness(self):
+        """Test UUID generation and uniqueness"""
+        self.setup_table()
+        from index import handler
         
-        event1 = {
-            'httpMethod': 'POST',
-            'body': json.dumps({'email': 'user1@example.com'})
-        }
+        # Create multiple users and verify UUIDs are unique
+        emails = [f'user{i}@example.com' for i in range(5)]
+        user_ids = []
         
-        event2 = {
-            'httpMethod': 'POST',
-            'body': json.dumps({'email': 'user2@example.com'})
-        }
-        
-        # Act
-        response1 = handler(event1, {})
-        response2 = handler(event2, {})
-        
-        # Assert
-        assert response1['statusCode'] == 201
-        assert response2['statusCode'] == 201
-        
-        body1 = json.loads(response1['body'])
-        body2 = json.loads(response2['body'])
-        
-        assert body1['id'] != body2['id']  # UUIDs should be unique
-        assert len(body1['id']) == 36  # Standard UUID length
-        assert len(body2['id']) == 36  # Standard UUID length
+        for email in emails:
+            event = {'httpMethod': 'POST', 'body': json.dumps({'email': email})}
+            response = handler(event, {})
+            
+            assert response['statusCode'] == 201
+            body = json.loads(response['body'])
+            user_id = body['id']
+            
+            # Verify UUID format
+            assert len(user_id) == 36
+            assert user_id.count('-') == 4
+            
+            # Verify uniqueness
+            assert user_id not in user_ids
+            user_ids.append(user_id)
 
-# Test fixtures
+    @mock_dynamodb
+    def test_email_trimming(self):
+        """Test that email whitespace is properly trimmed"""
+        self.setup_table()
+        from index import handler
+        
+        event = {'httpMethod': 'POST', 'body': json.dumps({'email': '  test@example.com  '})}
+        response = handler(event, {})
+        
+        assert response['statusCode'] == 201
+        body = json.loads(response['body'])
+        assert body['email'] == 'test@example.com'  # Should be trimmed
+
+# Test fixtures for common test data
 @pytest.fixture
 def valid_create_user_event():
     return {
@@ -353,4 +385,11 @@ def missing_email_event():
     return {
         'httpMethod': 'POST',
         'body': json.dumps({})
+    }
+
+@pytest.fixture
+def duplicate_email_event():
+    return {
+        'httpMethod': 'POST',
+        'body': json.dumps({'email': 'existing@example.com'})
     }

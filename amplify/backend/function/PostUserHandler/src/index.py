@@ -1,159 +1,170 @@
 import json
 import boto3
+import os
 import uuid
 import re
 from botocore.exceptions import ClientError
 
-# Initialize DynamoDB client
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('users')
+USERS_TABLE = os.environ.get('USERS_TABLE', 'users')
+EMAIL_INDEX = 'email-index'
+
 
 def handler(event, context):
-    """
-    AWS Lambda handler for POST /users
-    Creates a new user with email validation and duplicate checking
-    """
-    print('received event:')
-    print(event)
-    
+    headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': '*',
+        'Access-Control-Allow-Methods': '*',
+    }
+
     try:
-        # Only allow POST method
-        http_method = event.get('httpMethod')
-        if http_method != 'POST':
+        # Check if httpMethod exists first
+        if 'httpMethod' not in event:
+            return {
+                'statusCode': 500,
+                'headers': headers,
+                'body': json.dumps({'error': 'Internal server error'})
+            }
+
+        if event.get('httpMethod') != 'POST':
             return {
                 'statusCode': 405,
-                'headers': get_cors_headers(),
+                'headers': headers,
                 'body': json.dumps({'error': 'Method not allowed'})
             }
-        
-        return create_user(event)
-    
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        return {
-            'statusCode': 500,
-            'headers': get_cors_headers(),
-            'body': json.dumps({'error': 'Internal server error'})
-        }
 
-def create_user(event):
-    """
-    Create a new user with email validation and duplicate checking
-    """
-    try:
-        # Check if body exists
-        if 'body' not in event or event['body'] is None:
+        if 'body' not in event or not event['body']:
             return {
                 'statusCode': 400,
-                'headers': get_cors_headers(),
+                'headers': headers,
                 'body': json.dumps({'error': 'Request body is required'})
             }
-        
-        # Parse request body
+
         try:
-            body = json.loads(event['body'])
+            data = json.loads(event['body'])
         except json.JSONDecodeError:
             return {
                 'statusCode': 400,
-                'headers': get_cors_headers(),
+                'headers': headers,
                 'body': json.dumps({'error': 'Invalid JSON in request body'})
             }
-        
-        # Extract and validate email
-        email = body.get('email')
-        
-        if not email or not email.strip():
+
+        email = data.get('email', '').strip()
+        if not email:
             return {
                 'statusCode': 400,
-                'headers': get_cors_headers(),
+                'headers': headers,
                 'body': json.dumps({'error': 'Email is required'})
             }
-        
-        # Clean email
-        email = email.strip()
-        
-        # Validate email format
+
+        # Strict email format validation
         if not is_valid_email(email):
             return {
                 'statusCode': 400,
-                'headers': get_cors_headers(),
+                'headers': headers,
                 'body': json.dumps({'error': 'Invalid email format'})
             }
-        
-        # Check if user with email already exists using GSI
-        if user_exists_by_email(email):
+
+        table = dynamodb.Table(USERS_TABLE)
+
+        # Check for existing user with the same email
+        existing = table.query(
+            IndexName=EMAIL_INDEX,
+            KeyConditionExpression=boto3.dynamodb.conditions.Key('email').eq(email)
+        )
+
+        if existing.get('Count', 0) > 0:
             return {
                 'statusCode': 409,
-                'headers': get_cors_headers(),
+                'headers': headers,
                 'body': json.dumps({'error': 'User with this email already exists'})
             }
-        
-        # Create new user (only id and email fields)
+
+        # Create new user
         user_id = str(uuid.uuid4())
-        user_data = {
-            'id': user_id,
-            'email': email
-        }
-        
-        # Save to DynamoDB
-        table.put_item(Item=user_data)
-        
+        user = {'id': user_id, 'email': email}
+
+        table.put_item(Item=user)
+
         return {
             'statusCode': 201,
-            'headers': get_cors_headers(),
-            'body': json.dumps(user_data)
-        }
-    
-    except ClientError as e:
-        print(f"DynamoDB error: {str(e)}")
-        return {
-            'statusCode': 500,
-            'headers': get_cors_headers(),
-            'body': json.dumps({'error': 'Database error'})
+            'headers': headers,
+            'body': json.dumps(user)
         }
 
-def user_exists_by_email(email):
-    """
-    Check if a user with the given email already exists
-    Uses GSI for efficient email lookup
-    """
-    try:
-        # Query using GSI on email
-        response = table.query(
-            IndexName='email-index',
-            KeyConditionExpression='email = :email',
-            ExpressionAttributeValues={':email': email}
-        )
-        
-        return len(response.get('Items', [])) > 0
-    
     except ClientError as e:
-        print(f"Error checking user existence: {str(e)}")
-        # Fallback to scan if GSI fails
-        try:
-            response = table.scan(
-                FilterExpression='email = :email',
-                ExpressionAttributeValues={':email': email}
-            )
-            return len(response.get('Items', [])) > 0
-        except ClientError:
-            # If both methods fail, assume user doesn't exist to allow creation
-            return False
+        print("DynamoDB error:", e)
+        return {
+            'statusCode': 500,
+            'headers': headers,
+            'body': json.dumps({'error': 'Database error'})
+        }
+    except Exception as e:
+        print("Unhandled exception:", e)
+        return {
+            'statusCode': 500,
+            'headers': headers,
+            'body': json.dumps({'error': 'Internal server error'})
+        }
+
 
 def is_valid_email(email):
     """
-    Validate email format using regex
+    Validate email format with strict rules
     """
-    # Basic email validation regex
-    email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    return re.match(email_pattern, email) is not None
-
-def get_cors_headers():
-    """
-    Return CORS headers for web client compatibility
-    """
-    return {
-        'Access-Control-Allow-Headers': '*',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'OPTIONS,POST'
-    }
+    # Basic structure check
+    if not email or '@' not in email:
+        return False
+    
+    # Split into local and domain parts
+    try:
+        local, domain = email.rsplit('@', 1)
+    except ValueError:
+        return False
+    
+    # Check local part (before @)
+    if not local or len(local) > 64:
+        return False
+    
+    # Check domain part (after @)
+    if not domain or len(domain) > 255:
+        return False
+    
+    # Domain must contain at least one dot
+    if '.' not in domain:
+        return False
+    
+    # Domain cannot start or end with dot
+    if domain.startswith('.') or domain.endswith('.'):
+        return False
+    
+    # Check for consecutive dots
+    if '..' in email:
+        return False
+    
+    # Check for valid characters in local part
+    local_pattern = r'^[a-zA-Z0-9._%+-]+$'
+    if not re.match(local_pattern, local):
+        return False
+    
+    # Check for valid characters in domain part
+    domain_pattern = r'^[a-zA-Z0-9.-]+$'
+    if not re.match(domain_pattern, domain):
+        return False
+    
+    # Domain must have at least one part after the last dot (TLD)
+    domain_parts = domain.split('.')
+    if len(domain_parts) < 2:
+        return False
+    
+    # Last part (TLD) must be at least 2 characters and only letters
+    tld = domain_parts[-1]
+    if len(tld) < 2 or not tld.isalpha():
+        return False
+    
+    # Domain parts cannot be empty
+    for part in domain_parts:
+        if not part:
+            return False
+    
+    return True
