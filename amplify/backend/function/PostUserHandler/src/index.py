@@ -18,20 +18,24 @@ def handler(event, context):
     }
 
     try:
-        if 'body' not in event or not event['body']:
+        if 'body' in event and event['body']:
+            # API Gateway format - body is a JSON string
+            try:
+                data = json.loads(event['body'])
+            except json.JSONDecodeError:
+                return {
+                    'statusCode': 400,
+                    'headers': headers,
+                    'body': json.dumps({'error': 'Invalid JSON in request body'})
+                }
+        elif 'email' in event:
+            # Direct invocation format - data is directly in event
+            data = event
+        else:
             return {
                 'statusCode': 400,
                 'headers': headers,
                 'body': json.dumps({'error': 'Request body is required'})
-            }
-
-        try:
-            data = json.loads(event['body'])
-        except json.JSONDecodeError:
-            return {
-                'statusCode': 400,
-                'headers': headers,
-                'body': json.dumps({'error': 'Invalid JSON in request body'})
             }
 
         email = data.get('email', '').strip()
