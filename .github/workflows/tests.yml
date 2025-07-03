@@ -1,0 +1,37 @@
+name: Python Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.10.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+          # Install any other dependencies your tests might need
+          # pip install -r requirements.txt  # if you have a requirements file
+
+      - name: Run tests
+        run: |
+          # Run pytest from the amplify directory to find your tests
+          cd amplify
+          pytest tests/ -v
+
+      - name: Test Lambda function directly
+        run: |
+          cd amplify/backend/function/UserHandler/src
+          python -m pytest ../../../../../../tests/test_UserHandler.py -v
