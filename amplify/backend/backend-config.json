@@ -1,0 +1,33 @@
+{
+  "function": {
+    "UserHandler": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    }
+  },
+  "parameters": {
+    "AMPLIFY_function_UserHandler_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "UserHandler"
+        }
+      ]
+    },
+    "AMPLIFY_function_UserHandler_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "UserHandler"
+        }
+      ]
+    }
+  },
+  "storage": {
+    "database": {
+      "providerPlugin": "awscloudformation",
+      "service": "DynamoDB"
+    }
+  }
+}
