@@ -34,7 +34,7 @@
             "StreamArn"
           ],
           "category": "storage",
-          "resourceName": "tests"
+          "resourceName": "dynamo"
         }
       ],
       "providerPlugin": "awscloudformation",
@@ -50,7 +50,7 @@
             "StreamArn"
           ],
           "category": "storage",
-          "resourceName": "tests"
+          "resourceName": "dynamo"
         }
       ],
       "providerPlugin": "awscloudformation",
@@ -92,7 +92,7 @@
     }
   },
   "storage": {
-    "tests": {
+    "dynamo": {
       "providerPlugin": "awscloudformation",
       "service": "DynamoDB"
     }

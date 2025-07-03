@@ -5,7 +5,7 @@ import re
 from botocore.exceptions import ClientError
 
 dynamodb = boto3.resource('dynamodb')
-USERS_TABLE = os.environ.get('USERS_TABLE', 'test_users')
+USERS_TABLE = os.environ.get('USERS_TABLE', 'users')
 EMAIL_INDEX = 'email'
 
 

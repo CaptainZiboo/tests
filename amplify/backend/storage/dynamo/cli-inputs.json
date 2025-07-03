@@ -1,5 +1,5 @@
 {
-  "resourceName": "tests",
+  "resourceName": "dynamo",
   "tableName": "users",
   "partitionKey": {
     "fieldName": "id",

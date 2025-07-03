@@ -1,7 +1,7 @@
 {
   "permissions": {
     "storage": {
-      "tests": [
+      "dynamo": [
         "create",
         "read",
         "update",

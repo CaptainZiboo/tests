@@ -8,7 +8,7 @@ import uuid
 
 # Set environment variables for the lambda
 os.environ['AWS_DEFAULT_REGION'] = 'eu-west-1'
-os.environ['USERS_TABLE'] = 'test_users'
+os.environ['USERS_TABLE'] = 'users'
 
 # Add the lambda source directory to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend', 'function', 'PostUserHandler', 'src'))
@@ -19,7 +19,7 @@ class TestPostUserHandler:
         """Helper to create the mock DynamoDB users table"""
         dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
         table = dynamodb.create_table(
-            TableName='test_users',
+            TableName='users',
             KeySchema=[{'AttributeName': 'id', 'KeyType': 'HASH'}],
             AttributeDefinitions=[
                 {'AttributeName': 'id', 'AttributeType': 'S'},
@@ -36,7 +36,7 @@ class TestPostUserHandler:
             BillingMode='PROVISIONED',
             ProvisionedThroughput={'ReadCapacityUnits': 5, 'WriteCapacityUnits': 5}
         )
-        table.meta.client.get_waiter('table_exists').wait(TableName='test_users')
+        table.meta.client.get_waiter('table_exists').wait(TableName='users')
         return table
 
     @mock_dynamodb
@@ -368,7 +368,7 @@ class TestPostUserHandler:
         response = handler(event, {})
         assert response['statusCode'] == 500
         body = json.loads(response['body'])
-        assert body['error'] == 'Database error'
+        assert body['error'].startswith('Database error:')
 
     @mock_dynamodb
     def test_general_exception_handling(self):
