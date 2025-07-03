@@ -15,7 +15,7 @@
       "function": {
         "GetUserHandler": {
           "deploymentBucketName": "amplify-project-dev-3aa24-deployment",
-          "s3Key": "amplify-builds/GetUserHandler-67674d55484d3644765a-build.zip"
+          "s3Key": "amplify-builds/GetUserHandler-327231436b657937676f-build.zip"
         },
         "PostUserHandler": {
           "deploymentBucketName": "amplify-project-dev-3aa24-deployment",
