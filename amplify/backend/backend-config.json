@@ -1,4 +1,28 @@
 {
+  "api": {
+    "apia8a451f3": {
+      "dependsOn": [
+        {
+          "attributes": [
+            "Name",
+            "Arn"
+          ],
+          "category": "function",
+          "resourceName": "GetUserHandler"
+        },
+        {
+          "attributes": [
+            "Name",
+            "Arn"
+          ],
+          "category": "function",
+          "resourceName": "PostUserHandler"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "API Gateway"
+    }
+  },
   "function": {
     "GetUserHandler": {
       "build": true,
@@ -10,7 +34,7 @@
             "StreamArn"
           ],
           "category": "storage",
-          "resourceName": "database"
+          "resourceName": "tests"
         }
       ],
       "providerPlugin": "awscloudformation",
@@ -26,7 +50,7 @@
             "StreamArn"
           ],
           "category": "storage",
-          "resourceName": "database"
+          "resourceName": "tests"
         }
       ],
       "providerPlugin": "awscloudformation",
@@ -68,7 +92,7 @@
     }
   },
   "storage": {
-    "database": {
+    "tests": {
       "providerPlugin": "awscloudformation",
       "service": "DynamoDB"
     }

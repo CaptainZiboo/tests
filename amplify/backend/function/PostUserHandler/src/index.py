@@ -6,7 +6,7 @@ import re
 from botocore.exceptions import ClientError
 
 dynamodb = boto3.resource('dynamodb')
-USERS_TABLE = os.environ.get('USERS_TABLE', 'users')
+USERS_TABLE = os.environ.get('USERS_TABLE', 'test_users')
 EMAIL_INDEX = 'email-index'
 
 
@@ -24,6 +24,14 @@ def handler(event, context):
                 'statusCode': 500,
                 'headers': headers,
                 'body': json.dumps({'error': 'Internal server error'})
+            }
+
+        # Handle OPTIONS for CORS preflight
+        if event.get('httpMethod') == 'OPTIONS':
+            return {
+                'statusCode': 200,
+                'headers': headers,
+                'body': ''
             }
 
         if event.get('httpMethod') != 'POST':
@@ -57,12 +65,23 @@ def handler(event, context):
                 'body': json.dumps({'error': 'Email is required'})
             }
 
+        # Get optional name field
+        name = data.get('name', '').strip()
+
         # Strict email format validation
         if not is_valid_email(email):
             return {
                 'statusCode': 400,
                 'headers': headers,
                 'body': json.dumps({'error': 'Invalid email format'})
+            }
+
+        # Validate name if provided
+        if name and len(name) > 100:
+            return {
+                'statusCode': 400,
+                'headers': headers,
+                'body': json.dumps({'error': 'Name must be less than 100 characters'})
             }
 
         table = dynamodb.Table(USERS_TABLE)
@@ -82,7 +101,14 @@ def handler(event, context):
 
         # Create new user
         user_id = str(uuid.uuid4())
-        user = {'id': user_id, 'email': email}
+        user = {
+            'id': user_id, 
+            'email': email
+        }
+        
+        # Add name if provided
+        if name:
+            user['name'] = name
 
         table.put_item(Item=user)
 

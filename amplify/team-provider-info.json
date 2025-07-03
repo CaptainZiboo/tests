@@ -12,18 +12,18 @@
       "AmplifyAppId": "do9un7blb641m"
     },
     "categories": {
-      "storage": {
-        "database": {}
-      },
       "function": {
         "GetUserHandler": {
           "deploymentBucketName": "amplify-project-dev-3aa24-deployment",
-          "s3Key": "amplify-builds/GetUserHandler-6956503165505a613667-build.zip"
+          "s3Key": "amplify-builds/GetUserHandler-2b494d52766275337363-build.zip"
         },
         "PostUserHandler": {
           "deploymentBucketName": "amplify-project-dev-3aa24-deployment",
           "s3Key": "amplify-builds/PostUserHandler-76717366445a522b2f70-build.zip"
         }
+      },
+      "api": {
+        "apia8a451f3": {}
       }
     }
   }

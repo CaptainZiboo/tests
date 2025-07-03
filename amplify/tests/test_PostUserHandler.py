@@ -8,6 +8,7 @@ import uuid
 
 # Set environment variables for the lambda
 os.environ['AWS_DEFAULT_REGION'] = 'eu-west-1'
+os.environ['USERS_TABLE'] = 'test_users'
 
 # Add the lambda source directory to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend', 'function', 'PostUserHandler', 'src'))
@@ -18,7 +19,7 @@ class TestPostUserHandler:
         """Helper to create the mock DynamoDB users table"""
         dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
         table = dynamodb.create_table(
-            TableName='users',
+            TableName='test_users',
             KeySchema=[{'AttributeName': 'id', 'KeyType': 'HASH'}],
             AttributeDefinitions=[
                 {'AttributeName': 'id', 'AttributeType': 'S'},
@@ -35,7 +36,7 @@ class TestPostUserHandler:
             BillingMode='PROVISIONED',
             ProvisionedThroughput={'ReadCapacityUnits': 5, 'WriteCapacityUnits': 5}
         )
-        table.meta.client.get_waiter('table_exists').wait(TableName='users')
+        table.meta.client.get_waiter('table_exists').wait(TableName='test_users')
         return table
 
     @mock_dynamodb
@@ -230,6 +231,48 @@ class TestPostUserHandler:
         assert body['error'] == 'Request body is required'
 
     @mock_dynamodb
+    def test_create_user_with_name(self):
+        """Test user creation with name field"""
+        self.setup_table()
+        from index import handler
+        
+        event = {
+            'httpMethod': 'POST',
+            'body': json.dumps({
+                'email': 'test@example.com',
+                'name': 'Jean Dupont'
+            })
+        }
+
+        response = handler(event, {})
+        assert response['statusCode'] == 201
+        
+        body = json.loads(response['body'])
+        assert body['email'] == 'test@example.com'
+        assert body['name'] == 'Jean Dupont'
+        assert 'id' in body
+
+    @mock_dynamodb
+    def test_create_user_name_too_long(self):
+        """Test name length validation"""
+        self.setup_table()
+        from index import handler
+        
+        long_name = 'A' * 101  # 101 characters
+        event = {
+            'httpMethod': 'POST',
+            'body': json.dumps({
+                'email': 'test@example.com',
+                'name': long_name
+            })
+        }
+
+        response = handler(event, {})
+        assert response['statusCode'] == 400
+        body = json.loads(response['body'])
+        assert body['error'] == 'Name must be less than 100 characters'
+
+    @mock_dynamodb
     def test_create_user_additional_fields_ignored(self):
         """Test that additional fields are ignored for security"""
         self.setup_table()
@@ -252,14 +295,14 @@ class TestPostUserHandler:
         
         body = json.loads(response['body'])
         assert body['email'] == 'test@example.com'
-        assert 'name' not in body
+        assert body['name'] == 'Test User'  # Name should be kept
         assert 'age' not in body
         assert 'admin' not in body
         assert 'password' not in body
         assert 'extra' not in body
         
         # Verify only allowed fields are stored
-        assert len(body) == 2  # Only 'id' and 'email'
+        assert len(body) == 3  # 'id', 'email', and 'name'
 
     @mock_dynamodb
     def test_unsupported_http_method(self):
@@ -267,7 +310,7 @@ class TestPostUserHandler:
         self.setup_table()
         from index import handler
         
-        unsupported_methods = ['GET', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']
+        unsupported_methods = ['GET', 'PUT', 'DELETE', 'PATCH', 'HEAD']
         
         for method in unsupported_methods:
             event = {'httpMethod': method}
@@ -275,6 +318,20 @@ class TestPostUserHandler:
             assert response['statusCode'] == 405
             body = json.loads(response['body'])
             assert body['error'] == 'Method not allowed'
+
+    @mock_dynamodb
+    def test_options_method_cors_preflight(self):
+        """Test OPTIONS method for CORS preflight"""
+        self.setup_table()
+        from index import handler
+        
+        response = handler({'httpMethod': 'OPTIONS'}, {})
+        assert response['statusCode'] == 200
+        assert response['body'] == ''
+        headers = response['headers']
+        assert headers['Access-Control-Allow-Origin'] == '*'
+        assert 'Access-Control-Allow-Headers' in headers
+        assert 'Access-Control-Allow-Methods' in headers
 
     @mock_dynamodb
     def test_cors_headers_present(self):

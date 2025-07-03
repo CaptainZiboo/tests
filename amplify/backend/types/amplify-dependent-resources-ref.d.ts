@@ -1,4 +1,11 @@
 export type AmplifyDependentResourcesAttributes = {
+  "api": {
+    "apia8a451f3": {
+      "ApiId": "string",
+      "ApiName": "string",
+      "RootUrl": "string"
+    }
+  },
   "function": {
     "GetUserHandler": {
       "Arn": "string",
@@ -16,7 +23,7 @@ export type AmplifyDependentResourcesAttributes = {
     }
   },
   "storage": {
-    "database": {
+    "tests": {
       "Arn": "string",
       "Name": "string",
       "PartitionKeyName": "string",

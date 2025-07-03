@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "paths": {
+    "/users": {
+      "name": "/users",
+      "lambdaFunction": "GetUserHandler",
+      "permissions": {
+        "setting": "open"
+      }
+    },
+    "/users/create": {
+      "name": "/users/create",
+      "lambdaFunction": "PostUserHandler",
+      "permissions": {
+        "setting": "open"
+      }
+    }
+  }
+}

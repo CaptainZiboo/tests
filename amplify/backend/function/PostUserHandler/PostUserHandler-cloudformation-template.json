@@ -16,17 +16,17 @@
     "s3Key": {
       "Type": "String"
     },
-    "storagedatabaseName": {
+    "storagetestsName": {
       "Type": "String",
-      "Default": "storagedatabaseName"
+      "Default": "storagetestsName"
     },
-    "storagedatabaseArn": {
+    "storagetestsArn": {
       "Type": "String",
-      "Default": "storagedatabaseArn"
+      "Default": "storagetestsArn"
     },
-    "storagedatabaseStreamArn": {
+    "storagetestsStreamArn": {
       "Type": "String",
-      "Default": "storagedatabaseStreamArn"
+      "Default": "storagetestsStreamArn"
     }
   },
   "Conditions": {
@@ -82,14 +82,14 @@
             "REGION": {
               "Ref": "AWS::Region"
             },
-            "STORAGE_DATABASE_NAME": {
-              "Ref": "storagedatabaseName"
+            "STORAGE_TESTS_NAME": {
+              "Ref": "storagetestsName"
             },
-            "STORAGE_DATABASE_ARN": {
-              "Ref": "storagedatabaseArn"
+            "STORAGE_TESTS_ARN": {
+              "Ref": "storagetestsArn"
             },
-            "STORAGE_DATABASE_STREAMARN": {
-              "Ref": "storagedatabaseStreamArn"
+            "STORAGE_TESTS_STREAMARN": {
+              "Ref": "storagetestsStreamArn"
             }
           }
         },
@@ -223,14 +223,14 @@
               ],
               "Resource": [
                 {
-                  "Ref": "storagedatabaseArn"
+                  "Ref": "storagetestsArn"
                 },
                 {
                   "Fn::Join": [
                     "/",
                     [
                       {
-                        "Ref": "storagedatabaseArn"
+                        "Ref": "storagetestsArn"
                       },
                       "index/*"
                     ]

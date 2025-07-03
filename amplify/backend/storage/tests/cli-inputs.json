@@ -1,6 +1,6 @@
 {
-  "resourceName": "database",
-  "tableName": "users",
+  "resourceName": "tests",
+  "tableName": "test_users",
   "partitionKey": {
     "fieldName": "id",
     "fieldType": "string"
