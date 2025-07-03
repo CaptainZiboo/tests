@@ -16,7 +16,7 @@ importers:
         version: 19.1.0(react@19.1.0)
     devDependencies:
       '@eslint/js':
-        specifier: ^9.29.0
+        specifier: ^9.30.1
         version: 9.30.1
       '@types/react':
         specifier: ^19.1.8
@@ -25,10 +25,10 @@ importers:
         specifier: ^19.1.6
         version: 19.1.6(@types/react@19.1.8)
       '@vitejs/plugin-react':
-        specifier: ^4.5.2
+        specifier: ^4.6.0
         version: 4.6.0(vite@7.0.0)
       eslint:
-        specifier: ^9.29.0
+        specifier: ^9.30.1
         version: 9.30.1
       eslint-plugin-react-hooks:
         specifier: ^5.2.0
@@ -37,13 +37,13 @@ importers:
         specifier: ^0.4.20
         version: 0.4.20(eslint@9.30.1)
       globals:
-        specifier: ^16.2.0
+        specifier: ^16.3.0
         version: 16.3.0
       typescript:
         specifier: ~5.8.3
         version: 5.8.3
       typescript-eslint:
-        specifier: ^8.34.1
+        specifier: ^8.35.1
         version: 8.35.1(eslint@9.30.1)(typescript@5.8.3)
       vite:
         specifier: ^7.0.0
@@ -650,8 +650,8 @@ packages:
   deep-is@0.1.4:
     resolution: {integrity: sha512-oIPzksmTg4/MriiaYGO+okXDT7ztn/w3Eptv/+gSIdMdKsJo0u4CfYNFJPy+4SKMuCqGw2wxnA+URMg3t8a/bQ==}
 
-  electron-to-chromium@1.5.178:
-    resolution: {integrity: sha512-wObbz/ar3Bc6e4X5vf0iO8xTN8YAjN/tgiAOJLr7yjYFtP9wAjq8Mb5h0yn6kResir+VYx2DXBj9NNobs0ETSA==}
+  electron-to-chromium@1.5.179:
+    resolution: {integrity: sha512-UWKi/EbBopgfFsc5k61wFpV7WrnnSlSzW/e2XcBmS6qKYTivZlLtoll5/rdqRTxGglGHkmkW0j0pFNJG10EUIQ==}
 
   esbuild@0.25.5:
     resolution: {integrity: sha512-P8OtKZRv/5J5hhz0cUAdu/cLuPIKXpQl1R9pZtvmHWQvrAUVd0UNIPT4IB4W3rNOqVO0rlqHmCIbSwxh/c9yUQ==}
@@ -1620,7 +1620,7 @@ snapshots:
   browserslist@4.25.1:
     dependencies:
       caniuse-lite: 1.0.30001726
-      electron-to-chromium: 1.5.178
+      electron-to-chromium: 1.5.179
       node-releases: 2.0.19
       update-browserslist-db: 1.1.3(browserslist@4.25.1)
 
@@ -1657,7 +1657,7 @@ snapshots:
 
   deep-is@0.1.4: {}
 
-  electron-to-chromium@1.5.178: {}
+  electron-to-chromium@1.5.179: {}
 
   esbuild@0.25.5:
     optionalDependencies:
