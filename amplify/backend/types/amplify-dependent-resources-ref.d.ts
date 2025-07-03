@@ -23,7 +23,7 @@ export type AmplifyDependentResourcesAttributes = {
     }
   },
   "storage": {
-    "tests": {
+    "dynamo": {
       "Arn": "string",
       "Name": "string",
       "PartitionKeyName": "string",
