@@ -1,25 +1,68 @@
 {
   "function": {
-    "UserHandler": {
+    "GetUserHandler": {
       "build": true,
+      "dependsOn": [
+        {
+          "attributes": [
+            "Name",
+            "Arn",
+            "StreamArn"
+          ],
+          "category": "storage",
+          "resourceName": "database"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    },
+    "PostUserHandler": {
+      "build": true,
+      "dependsOn": [
+        {
+          "attributes": [
+            "Name",
+            "Arn",
+            "StreamArn"
+          ],
+          "category": "storage",
+          "resourceName": "database"
+        }
+      ],
       "providerPlugin": "awscloudformation",
       "service": "Lambda"
     }
   },
   "parameters": {
-    "AMPLIFY_function_UserHandler_deploymentBucketName": {
+    "AMPLIFY_function_GetUserHandler_deploymentBucketName": {
       "usedBy": [
         {
           "category": "function",
-          "resourceName": "UserHandler"
+          "resourceName": "GetUserHandler"
         }
       ]
     },
-    "AMPLIFY_function_UserHandler_s3Key": {
+    "AMPLIFY_function_GetUserHandler_s3Key": {
       "usedBy": [
         {
           "category": "function",
-          "resourceName": "UserHandler"
+          "resourceName": "GetUserHandler"
+        }
+      ]
+    },
+    "AMPLIFY_function_PostUserHandler_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "PostUserHandler"
+        }
+      ]
+    },
+    "AMPLIFY_function_PostUserHandler_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "PostUserHandler"
         }
       ]
     }
