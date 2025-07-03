@@ -43,7 +43,7 @@ function App() {
     setCreateMessage('')
 
     try {
-      const response = await fetch(`${API_BASE_URL}/users/create`, {
+      const response = await fetch(`${API_BASE_URL}/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
