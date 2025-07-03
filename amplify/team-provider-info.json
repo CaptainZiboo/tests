@@ -15,11 +15,11 @@
       "function": {
         "GetUserHandler": {
           "deploymentBucketName": "amplify-project-dev-3aa24-deployment",
-          "s3Key": "amplify-builds/GetUserHandler-316776456a4f384d5630-build.zip"
+          "s3Key": "amplify-builds/GetUserHandler-6c5168336b466c383177-build.zip"
         },
         "PostUserHandler": {
           "deploymentBucketName": "amplify-project-dev-3aa24-deployment",
-          "s3Key": "amplify-builds/PostUserHandler-39325a727a4130495154-build.zip"
+          "s3Key": "amplify-builds/PostUserHandler-6177647a3764624b6557-build.zip"
         }
       },
       "api": {
