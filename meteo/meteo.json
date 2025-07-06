@@ -1,0 +1,57 @@
+{
+  "periode": {
+    "debut": "2025-07-02",
+    "fin": "2025-07-08",
+    "nb_jours": 7
+  },
+  "temperatures": {
+    "max_moyenne": 25.3,
+    "min_moyenne": 16.1,
+    "max_absolue": 32.8,
+    "min_absolue": 13.2,
+    "amplitude_moyenne": 9.1
+  },
+  "precipitations": {
+    "total_mm": 7.2,
+    "jours_avec_pluie": 3,
+    "pourcentage_jours_pluie": 42.9
+  },
+  "donnees_brutes": {
+    "dates": [
+      "2025-07-02",
+      "2025-07-03",
+      "2025-07-04",
+      "2025-07-05",
+      "2025-07-06",
+      "2025-07-07",
+      "2025-07-08"
+    ],
+    "temp_max": [
+      32.8,
+      26.0,
+      27.0,
+      27.0,
+      23.3,
+      21.1,
+      19.8
+    ],
+    "temp_min": [
+      21.0,
+      16.5,
+      15.4,
+      15.8,
+      16.5,
+      14.6,
+      13.2
+    ],
+    "precipitation": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      3.9,
+      0.6,
+      2.7
+    ]
+  }
+}
